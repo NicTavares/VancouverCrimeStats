@@ -72,6 +72,7 @@ head(crime_data)
 ```{r}
 crime_data_clean = subset(crime_data, select = c(TYPE, YEAR, NEIGHBOURHOOD))
 crime_data_clean = crime_data_clean %>% filter(!is.na(TYPE)) %>% filter(!is.na(YEAR)) %>% filter(!is.na(NEIGHBOURHOOD))
+crime_data_clean = crime_data_clean %>% filter(NEIGHBOURHOOD == 'Central Business District' | NEIGHBOURHOOD == 'Kitsilano')
 head(crime_data_clean)
 ```
 
@@ -103,11 +104,21 @@ print(Bike_Plot)
 **Sampling**
 
 ```{r}
-# n = crime_data_clean %>% summarize(n = n())
-# n
+n = crime_data_clean %>% summarize(n = n())
+n
 # Sample 
-sample = crime_data_clean %>% infer::rep_sample_n(size = 80000)
+sample = crime_data_clean %>% infer::rep_sample_n(size = 25000)
 head(sample)
+
+sample_2003_2010_CBD = sample %>% filter(YEAR >= 2003 & YEAR <= 2010 & NEIGHBOURHOOD == 'Central Business District')
+
+sample_2011_2018_CBD = sample %>% filter(YEAR >= 2011 & YEAR <= 2018 & NEIGHBOURHOOD == 'Central Business District')
+
+sample_2003_2010_kits = sample %>% filter(YEAR >= 2003 & YEAR <= 2010 & NEIGHBOURHOOD == 'Kitsilano')
+
+sample_2011_2018_kits = sample %>% filter(YEAR >= 2011 & YEAR <= 2018 & NEIGHBOURHOOD == 'Kitsilano')
+
+head(sample_2011_2018_kits)
 
 # # Grouping by Year and TYpe
 # crimes_per_year_type = sample %>% group_by(YEAR, TYPE) %>% summarize(n = n())
@@ -131,10 +142,57 @@ head(sample)
 
 ```
 
+**Initial Proportion Calculation**
+
+```{r}
+kits_2003_2010_n = sample_2003_2010_kits %>% group_by(TYPE) %>% summarize(n = n())
+kits_2011_2018_n = sample_2011_2018_kits %>% group_by(TYPE) %>% summarize(n = n())
+CBD_2003_2010_n = sample_2003_2010_CBD %>% group_by(TYPE) %>% summarize(n = n())
+CBD_2011_2018_n = sample_2011_2018_CBD %>% group_by(TYPE) %>% summarize(n = n())
+# head(kits_2003_2010_n)
+# head(kits_2011_2018_n)
+# head(CBD_2003_2010_n)
+# head(CBD_2011_2018_n)
+
+
+#The proportion of total crimes in Kitsilano from 2003-2010 that were Bicycle theft
+total_crimes_kits_2003 = sum(kits_2003_2010_n$n)
+bike_theft_kits_2003 = kits_2003_2010_n %>% filter(TYPE == 'Theft of Bicycle')
+kits_2003_2010_prop = bike_theft_kits_2003$n/total_crimes_kits_2003
+print("Proportion of Crime in Kitsilano That was Bike Theft from 2003-2010:")
+kits_2003_2010_prop
+
+
+#Proportion for kits 2011 to 2018
+total_crimes_kits_2011 = sum(kits_2011_2018_n$n)
+bike_theft_kits_2011 = kits_2011_2018_n %>% filter(TYPE == 'Theft of Bicycle')
+kits_2010_2018_prop = bike_theft_kits_2011$n/total_crimes_kits_2011
+print("Proportion of Crime in Kitsilano That was Bike Theft from 2011-2018:")
+kits_2010_2018_prop
+
+
+#Proportions for CBD 2003 to 2010
+total_crimes_CBD_2003 = sum(CBD_2003_2010_n$n)
+bikes_theft_CBD_2003 = CBD_2003_2010_n %>% filter(TYPE == 'Theft of Bicycle')
+CBD_prop_2003 = bikes_theft_CBD_2003$n/total_crimes_CBD_2003
+print("Proportion of Crime in the Central Business District that was Bike Theft from 2003-2010:")
+CBD_prop_2003
+
+
+#proportions for CBD 2011 to 2018
+total_crimes_CBD_2011 = sum(CBD_2003_2010_n$n)
+bikes_theft_CBD_2011 = CBD_2011_2018_n %>% filter(TYPE == 'Theft of Bicycle')
+CBD_prop_2011 = bikes_theft_CBD_2011$n/total_crimes_CBD_2011
+print("Proportion of Crime in the Central Business District that was Bike Theft from 2011-2018:")
+CBD_prop_2011
+
+```
+
 **Methods**
 In what ways is this report trustworthy?
 
 Continue by explaining why the plot(s) and estimates that you produced are not enough to give to a stakeholder, and what you should provide in addition to address this gap. Make sure your plans include at least one hypothesis test and one confidence interval, with at least one of these being calculated using both bootstrapping and asymptotics for comparison.
+**The initial estimates here are not trustworthy because they are based only on point estimates from our sample. It is possible that while our point estimates are different they are not different enough to believe that the actual population parameters are truly different. We would still need to perform hypothesis testing to determine our confidence level that the true proportions are different (I'm not sure if this makes sense/is true)-Nic**
 
 What do you expect to find? 
 
