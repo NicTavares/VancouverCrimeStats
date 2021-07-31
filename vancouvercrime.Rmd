@@ -1,0 +1,145 @@
+---
+jupyter:
+  jupytext:
+    formats: ipynb,Rmd
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.7.1
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+---
+
+<!-- #region nbgrader={"grade": false, "grade_id": "cell-0a3a16e4560c3222", "locked": true, "schema_version": 3, "solution": false, "task": false} -->
+# STAT 201 Project: Vancouver Crime
+<!-- #endregion -->
+
+```{r}
+# install.packages("infer")
+# install.packages("gridExtra")
+# install.packages("cowplot")
+```
+
+**Possible research question:** Is the proportion of bike theft crime compared to other crime different in two different neighbourhoods? 
+
+
+**Introduction**
+
+Dataset: The dataset we will be using is the Vancouver crime dataset provided by: https://geodash.vpd.ca/opendata/ . It contains the years, classifications, times, and locations of various crimes that have occurred in Vancouver starting from 2003 up to present.
+
+Background: Crime rates in Vancouver are constantly fluctuating. The COVID-19 pandemic in particular has drastically affected crime rates in the city of Vancouver. Local police recorded a 21.7% rise in serious assaults in the first half of 2020. Since most businesses closed and were left unattended, break-ins to commercial buildings increased by 47.9%. As restrictions loosened in late 2020, breaking and entering crimes began to subside, as well as domestic assault. ← should be more relevant to variables in our dataset? Explain more once we’ve chosen variables
+
+
+**Reading Data**
+
+```{r}
+library(readr)
+library(tidyverse)
+library(repr)
+library(digest)
+library(infer)
+# library(gridExtra)
+# library(cowplot)
+
+myurl <- "https://raw.githubusercontent.com/NicTavares/VancouverCrimeStats/master/crimedata_csv_all_years.csv"
+
+crime_data<-read_csv(url(myurl))
+head(crime_data)
+```
+
+**Cleaning the Data**
+
+```{r}
+crime_data_clean = subset(crime_data, select = c(TYPE, YEAR, NEIGHBOURHOOD))
+crime_data_clean = crime_data_clean %>% filter(!is.na(TYPE)) %>% filter(!is.na(YEAR)) %>% filter(!is.na(NEIGHBOURHOOD))
+head(crime_data_clean)
+```
+
+**Basic Plots**
+
+```{r}
+year_plot <- crime_data_clean %>% ggplot() + geom_histogram(aes(x = YEAR), bins = 18) + labs(title = "Number of Crimes Per Year",
+         x = "Year", y = "Number of Crimes")
+crime_count <- crime_data_clean %>% group_by(TYPE) %>% summarize(Count = n())
+
+neighbourhood_count <- crime_data_clean %>% group_by(NEIGHBOURHOOD) %>% summarize(Count = n())
+
+Bike_Plot <- crime_data_clean %>% filter(TYPE == "Theft of Bicycle") %>% group_by(NEIGHBOURHOOD) %>% summarize(count = n())%>%
+   ggplot() + geom_col(aes(x = NEIGHBOURHOOD, y = count)) + labs(title = "Frequency of Bike Theft Crimes",
+         x = "Type of Crime", y = "Frequency") + theme(axis.text.x = element_text(angle = 90))
+
+crime_count_plot <- crime_count %>% ggplot() + geom_col(aes(x = TYPE, y = Count)) + labs(title = "Frequency of Different Crimes",
+         x = "Type of Crime", y = "Frequency") + theme(axis.text.x = element_text(angle = 90))
+
+neighbourhood_count_plot <- neighbourhood_count %>% ggplot() + geom_col(aes(x = NEIGHBOURHOOD, y = Count)) + labs(title = "Frequency of Crime In Neighbourhoods",
+         x = "Neighbourhood", y = "Frequency") + theme(axis.text.x = element_text(angle = 90))
+
+print(crime_count_plot)
+print(year_plot)
+print(neighbourhood_count_plot)
+print(Bike_Plot)
+```
+
+**Sampling**
+
+```{r}
+# n = crime_data_clean %>% summarize(n = n())
+# n
+# Sample 
+sample = crime_data_clean %>% rep_sample_n(size = 80000)
+head(sample)
+
+# Grouping by Year and TYpe
+crimes_per_year_type = sample %>% group_by(YEAR, TYPE) %>% summarize(n = n())
+print(crimes_per_year_type)
+
+# Grouping by year and neighbourhood
+crimes_per_year_neighbourhood = sample %>% group_by(YEAR, NEIGHBOURHOOD) %>%
+ summarize(n = n()) %>%
+ mutate(prop = n/sum(n))
+
+
+head(crimes_per_year_neighbourhood)
+# crimes_per_type = sample %>% group_by(TYPE) %>% summarize(n = n()) 
+# print(head(crimes_per_type))
+
+# crimes_per_neighbourhood = sample %>% group_by(NEIGHBOURHOOD) %>% summarize(n = n())
+# print(head(crimes_per_neighbourhood))
+```
+
+**Methods**
+In what ways is this report trustworthy?
+
+Continue by explaining why the plot(s) and estimates that you produced are not enough to give to a stakeholder, and what you should provide in addition to address this gap. Make sure your plans include at least one hypothesis test and one confidence interval, with at least one of these being calculated using both bootstrapping and asymptotics for comparison.
+
+What do you expect to find? 
+
+We expect to find that certain crimes such as assault may have increased over time while others may have decreased. We also expect the total number of crimes to increase over the years. ← mention neighbourhood predictions
+
+**for the bike crime question I would expect bike crimes as a proportion of total crime to be different across different neighbourhoods -Nic**
+
+What impact could such findings have?
+
+The results of this project could help inform the police on how to allocate their resources the most effectively (i.e., have higher staff in X neighbourhood). Our results may indicate which crimes are becoming more frequent in specified neighbourhoods, information that the Vancouver Police Department could use to strategically schedule staff based on their abilities and experiences. 
+
+**Impact for the bike crime as a proportion of crime could something similar to this - it could inform police resource allocation and city budget allocation. For example installing more cameras and bike racks in certain locations or installing bike cage rentals in certain locations -Nic**
+
+What future questions could this lead to? 
+
+A future question this project could inform is “Why has the occurrence of crime x increased/decreased over time?” 
+
+**Similarily it could inform the question of why is bike crime greater/lesser/same in this area versus other areas? -Nic**
+
+
+**References**
+
+(1)The Canadian Press. (2020, September 17). Vancouver police record increase in violent crime, decrease in property crime in the first half of 2020. CBCnews. https://www.cbc.ca/news/canada/british-columbia/vancouver-police-increase-violent-crime-decrease-property-crime-1.5728664.
+
+(2)Uguen-Csenge, E. (2021, June 27). Here's what happened to crime rates in Vancouver during the pandemic | CBC News. CBCnews. https://www.cbc.ca/news/canada/british-columbia/here-s-what-happened-to-crime-rates-in-vancouver-during-the-pandemic-1.6078015.
+
+```{r}
+
+```
