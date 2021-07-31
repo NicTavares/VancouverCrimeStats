@@ -18,19 +18,36 @@ jupyter:
 <!-- #endregion -->
 
 ```{r}
-# install.packages("infer")
+set.seed(8888)
+inferURL <- "https://cran.r-project.org/src/contrib/Archive/infer/infer_0.5.3.tar.gz"
+
+install.packages(inferURL, repos=NULL, type="source")
 # install.packages("gridExtra")
 # install.packages("cowplot")
 ```
 
-**Possible research question:** Is the proportion of bike theft crime compared to other crime different in two different neighbourhoods? 
+**Possible research question:** Is the proportion of bike theft crime compared to other crime different in two different neighbourhoods between 2003 and 2010 and had this changed from 2011 to 2018.
+
+Random Variable: Bike theft as a proportion of total crime
+
+Category 1: Neighbourhoods (Central Business District vs Kitsilano)
+
+Category 2: Time periods (2003-2010 vs 2011-2018)
 
 
 **Introduction**
 
-Dataset: The dataset we will be using is the Vancouver crime dataset provided by: https://geodash.vpd.ca/opendata/ . It contains the years, classifications, times, and locations of various crimes that have occurred in Vancouver starting from 2003 up to present.
+**Possible research question:** Is the proportion of bike theft crime compared to other crime different in two different neighbourhoods between 2003 and 2010 and had this changed from 2011 to 2018.
 
-Background: Crime rates in Vancouver are constantly fluctuating. The COVID-19 pandemic in particular has drastically affected crime rates in the city of Vancouver. Local police recorded a 21.7% rise in serious assaults in the first half of 2020. Since most businesses closed and were left unattended, break-ins to commercial buildings increased by 47.9%. As restrictions loosened in late 2020, breaking and entering crimes began to subside, as well as domestic assault. ← should be more relevant to variables in our dataset? Explain more once we’ve chosen variables
+Random Variable: Bike theft as a proportion of total crime
+
+Category 1: Neighbourhoods (Central Business District vs Kitsilano)
+
+Category 2: Time periods (2003-2010 vs 2011-2018)
+
+**Dataset:** The dataset we will be using is the Vancouver crime dataset provided by: https://geodash.vpd.ca/opendata/ . It contains the years, classifications, times, and locations of various crimes that have occurred in Vancouver starting from 2003 up to present.
+
+**Background:** Crime rates in Vancouver are constantly fluctuating. The COVID-19 pandemic in particular has drastically affected crime rates in the city of Vancouver. Local police recorded a 21.7% rise in serious assaults in the first half of 2020. Since most businesses closed and were left unattended, break-ins to commercial buildings increased by 47.9%. As restrictions loosened in late 2020, breaking and entering crimes began to subside, as well as domestic assault. ← should be more relevant to variables in our dataset? Explain more once we’ve chosen variables
 
 
 **Reading Data**
@@ -40,7 +57,7 @@ library(readr)
 library(tidyverse)
 library(repr)
 library(digest)
-library(infer)
+# library(infer)
 # library(gridExtra)
 # library(cowplot)
 
@@ -89,25 +106,29 @@ print(Bike_Plot)
 # n = crime_data_clean %>% summarize(n = n())
 # n
 # Sample 
-sample = crime_data_clean %>% rep_sample_n(size = 80000)
+sample = crime_data_clean %>% infer::rep_sample_n(size = 80000)
 head(sample)
 
-# Grouping by Year and TYpe
-crimes_per_year_type = sample %>% group_by(YEAR, TYPE) %>% summarize(n = n())
-print(crimes_per_year_type)
+# # Grouping by Year and TYpe
+# crimes_per_year_type = sample %>% group_by(YEAR, TYPE) %>% summarize(n = n())
+# print(crimes_per_year_type)
 
-# Grouping by year and neighbourhood
-crimes_per_year_neighbourhood = sample %>% group_by(YEAR, NEIGHBOURHOOD) %>%
- summarize(n = n()) %>%
- mutate(prop = n/sum(n))
+# # Grouping by year and neighbourhood
+# crimes_per_year_neighbourhood = sample %>% group_by(YEAR, NEIGHBOURHOOD) %>%
+#  summarize(n = n()) %>%
+#  mutate(prop = n/sum(n))
 
 
-head(crimes_per_year_neighbourhood)
+# head(crimes_per_year_neighbourhood)
 # crimes_per_type = sample %>% group_by(TYPE) %>% summarize(n = n()) 
 # print(head(crimes_per_type))
 
 # crimes_per_neighbourhood = sample %>% group_by(NEIGHBOURHOOD) %>% summarize(n = n())
 # print(head(crimes_per_neighbourhood))
+
+
+
+
 ```
 
 **Methods**
