@@ -14,49 +14,39 @@ jupyter:
 ---
 
 <!-- #region nbgrader={"grade": false, "grade_id": "cell-0a3a16e4560c3222", "locked": true, "schema_version": 3, "solution": false, "task": false} -->
+
 # STAT 201 Project: Vancouver Crime
+
 <!-- #endregion -->
 
-```{r}
+## Introduction
+
+### Possible research question
+
+*Is the proportion of bike theft crime compared to other crime different in two different neighbourhoods between 2003 and 2010 and had this changed from 2011 to 2018?*
+
+- **Random Variable:** Bike theft as a proportion of total crime
+
+- **Category 1: Neighbourhoods** (Central Business District vs Kitsilano)
+
+- **Category 2:** Time periods (2003-2010 vs 2011-2018)
+
+### Dataset: 
+The dataset we will be using is the Vancouver crime dataset provided by: <https://geodash.vpd.ca/opendata/> . It contains the years, classifications, times, and locations of various crimes that have occurred in Vancouver starting from 2003 up to present.
+
+### Background: 
+Crime rates in Vancouver are constantly fluctuating. The COVID-19 pandemic in particular has drastically affected crime rates in the city of Vancouver. Local police recorded a 21.7% rise in serious assaults in the first half of 2020. Since most businesses closed and were left unattended, break-ins to commercial buildings increased by 47.9%. As restrictions loosened in late 2020, breaking and entering crimes began to subside, as well as domestic assault.
+
+### Initial Code
+#### Reading Data
+
+```{r message=FALSE,warning=FALSE}
 set.seed(8888)
-inferURL <- "https://cran.r-project.org/src/contrib/Archive/infer/infer_0.5.3.tar.gz"
-
-install.packages(inferURL, repos=NULL, type="source")
-# install.packages("gridExtra")
-# install.packages("cowplot")
-```
-
-**Possible research question:** Is the proportion of bike theft crime compared to other crime different in two different neighbourhoods between 2003 and 2010 and had this changed from 2011 to 2018.
-
-Random Variable: Bike theft as a proportion of total crime
-
-Category 1: Neighbourhoods (Central Business District vs Kitsilano)
-
-Category 2: Time periods (2003-2010 vs 2011-2018)
-
-
-**Introduction**
-
-**Possible research question:** Is the proportion of bike theft crime compared to other crime different in two different neighbourhoods between 2003 and 2010 and had this changed from 2011 to 2018.
-
-Random Variable: Bike theft as a proportion of total crime
-
-Category 1: Neighbourhoods (Central Business District vs Kitsilano)
-
-Category 2: Time periods (2003-2010 vs 2011-2018)
-
-**Dataset:** The dataset we will be using is the Vancouver crime dataset provided by: https://geodash.vpd.ca/opendata/ . It contains the years, classifications, times, and locations of various crimes that have occurred in Vancouver starting from 2003 up to present.
-
-**Background:** Crime rates in Vancouver are constantly fluctuating. The COVID-19 pandemic in particular has drastically affected crime rates in the city of Vancouver. Local police recorded a 21.7% rise in serious assaults in the first half of 2020. Since most businesses closed and were left unattended, break-ins to commercial buildings increased by 47.9%. As restrictions loosened in late 2020, breaking and entering crimes began to subside, as well as domestic assault. ← should be more relevant to variables in our dataset? Explain more once we’ve chosen variables
-
-
-**Reading Data**
-
-```{r}
 library(readr)
 library(tidyverse)
 library(repr)
 library(digest)
+library(todor)
 # library(infer)
 # library(gridExtra)
 # library(cowplot)
@@ -67,33 +57,65 @@ crime_data<-read_csv(url(myurl))
 head(crime_data)
 ```
 
-**Cleaning the Data**
+#### Cleaning the Data
 
 ```{r}
+# Selecting desired variables
 crime_data_clean = subset(crime_data, select = c(TYPE, YEAR, NEIGHBOURHOOD))
+
+# Removing NA
 crime_data_clean = crime_data_clean %>% filter(!is.na(TYPE)) %>% filter(!is.na(YEAR)) %>% filter(!is.na(NEIGHBOURHOOD))
+
+# Filtering for the chosen neighbourhoods
 crime_data_clean = crime_data_clean %>% filter(NEIGHBOURHOOD == 'Central Business District' | NEIGHBOURHOOD == 'Kitsilano')
 head(crime_data_clean)
 ```
 
-**Basic Plots**
+#### Basic Plots
 
 ```{r}
-year_plot <- crime_data_clean %>% ggplot() + geom_histogram(aes(x = YEAR), bins = 18) + labs(title = "Number of Crimes Per Year",
-         x = "Year", y = "Number of Crimes")
-crime_count <- crime_data_clean %>% group_by(TYPE) %>% summarize(Count = n())
+# Summarising the incidence data for TYPE and NEIGHBOURHOOD
+crime_count <- crime_data_clean %>% 
+  group_by(TYPE) %>% 
+  summarize(Count = n())
 
-neighbourhood_count <- crime_data_clean %>% group_by(NEIGHBOURHOOD) %>% summarize(Count = n())
+neighbourhood_count <- crime_data_clean %>% 
+  group_by(NEIGHBOURHOOD) %>% 
+  summarize(Count = n())
 
-Bike_Plot <- crime_data_clean %>% filter(TYPE == "Theft of Bicycle") %>% group_by(NEIGHBOURHOOD) %>% summarize(count = n())%>%
-   ggplot() + geom_col(aes(x = NEIGHBOURHOOD, y = count)) + labs(title = "Frequency of Bike Theft Crimes",
-         x = "Type of Crime", y = "Frequency") + theme(axis.text.x = element_text(angle = 90))
+# Plotting total crimes across years
+year_plot <- crime_data_clean %>% 
+  ggplot() + 
+  geom_histogram(aes(x = YEAR), bins = 18) + 
+  labs(title = "Total crime across years", x = "Year", y = "Number of Crimes")
 
-crime_count_plot <- crime_count %>% ggplot() + geom_col(aes(x = TYPE, y = Count)) + labs(title = "Frequency of Different Crimes",
-         x = "Type of Crime", y = "Frequency") + theme(axis.text.x = element_text(angle = 90))
+# Plotting the incidence of bike theft across years
+Bike_Plot <- crime_data_clean %>% 
+  filter(TYPE == "Theft of Bicycle") %>%
+  group_by(NEIGHBOURHOOD) %>% 
+  summarize(count = n()) %>%
+  ggplot() + 
+  geom_col(aes(x = NEIGHBOURHOOD, y = count,fill=NEIGHBOURHOOD)) + 
+  labs(title = "Incidence of Bike Theft", x = "Neighbourhood", y = "Incidence") + 
+  theme(axis.text.x = element_text(angle = 90),legend.position = "none")
 
-neighbourhood_count_plot <- neighbourhood_count %>% ggplot() + geom_col(aes(x = NEIGHBOURHOOD, y = Count)) + labs(title = "Frequency of Crime In Neighbourhoods",
-         x = "Neighbourhood", y = "Frequency") + theme(axis.text.x = element_text(angle = 90))
+# Plotting the incidence of each crime type across the total time
+crime_count_plot <- crime_count %>% 
+  ggplot() + 
+  geom_col(aes(x = TYPE, y = Count)) + 
+  labs(title = "Incidence of Different Crime Types", 
+       x = "Type of Crime", y = "Incidence",
+       subtitle = "Kitsilano and Central Business District") + 
+  theme(axis.text.x = element_text(angle = 90))
+
+# Plotting the incidence of all crime types per neighbourhood chosen across the total time
+neighbourhood_count_plot <- neighbourhood_count %>% 
+  ggplot() + 
+  geom_col(aes(x = NEIGHBOURHOOD, y = Count, fill = NEIGHBOURHOOD)) + 
+  labs(title = "Incidence of All Crime Types per Neighbourhood", 
+       x = "Neighbourhood", y = "Incidence") + 
+  theme(axis.text.x = element_text(angle = 90),legend.position = "none")
+
 
 print(crime_count_plot)
 print(year_plot)
@@ -101,124 +123,110 @@ print(neighbourhood_count_plot)
 print(Bike_Plot)
 ```
 
-**Sampling**
+#### Sampling
 
 ```{r}
+# Calculating all crime incidents across all years
 n = crime_data_clean %>% summarize(n = n())
 n
-# Sample 
-sample = crime_data_clean %>% infer::rep_sample_n(size = 25000)
+
+# Sampling from the total crime data
+sample = crime_data_clean %>% 
+  infer::rep_sample_n(size = 25000) %>% 
+  ungroup() %>% 
+  select(-replicate)
+
 head(sample)
 
-sample_2003_2010_CBD = sample %>% filter(YEAR >= 2003 & YEAR <= 2010 & NEIGHBOURHOOD == 'Central Business District')
+# Creating the subsets of the sample of interest
+# Broken down by neighbourhood and time period
+sample_2003_2010_CBD = sample %>% 
+  filter(YEAR >= 2003 & YEAR <= 2010 & NEIGHBOURHOOD == 'Central Business District')
 
-sample_2011_2018_CBD = sample %>% filter(YEAR >= 2011 & YEAR <= 2018 & NEIGHBOURHOOD == 'Central Business District')
+sample_2011_2018_CBD = sample %>% 
+  filter(YEAR >= 2011 & YEAR <= 2018 & NEIGHBOURHOOD == 'Central Business District')
 
-sample_2003_2010_kits = sample %>% filter(YEAR >= 2003 & YEAR <= 2010 & NEIGHBOURHOOD == 'Kitsilano')
+sample_2003_2010_kits = sample %>%
+  filter(YEAR >= 2003 & YEAR <= 2010 & NEIGHBOURHOOD == 'Kitsilano')
 
-sample_2011_2018_kits = sample %>% filter(YEAR >= 2011 & YEAR <= 2018 & NEIGHBOURHOOD == 'Kitsilano')
+sample_2011_2018_kits = sample %>% 
+  filter(YEAR >= 2011 & YEAR <= 2018 & NEIGHBOURHOOD == 'Kitsilano')
 
 head(sample_2011_2018_kits)
-
-# # Grouping by Year and TYpe
-# crimes_per_year_type = sample %>% group_by(YEAR, TYPE) %>% summarize(n = n())
-# print(crimes_per_year_type)
-
-# # Grouping by year and neighbourhood
-# crimes_per_year_neighbourhood = sample %>% group_by(YEAR, NEIGHBOURHOOD) %>%
-#  summarize(n = n()) %>%
-#  mutate(prop = n/sum(n))
-
-
-# head(crimes_per_year_neighbourhood)
-# crimes_per_type = sample %>% group_by(TYPE) %>% summarize(n = n()) 
-# print(head(crimes_per_type))
-
-# crimes_per_neighbourhood = sample %>% group_by(NEIGHBOURHOOD) %>% summarize(n = n())
-# print(head(crimes_per_neighbourhood))
-
-
-
-
 ```
 
-**Initial Proportion Calculation**
+#### Initial Proportion Calculation
 
 ```{r}
-kits_2003_2010_n = sample_2003_2010_kits %>% group_by(TYPE) %>% summarize(n = n())
-kits_2011_2018_n = sample_2011_2018_kits %>% group_by(TYPE) %>% summarize(n = n())
-CBD_2003_2010_n = sample_2003_2010_CBD %>% group_by(TYPE) %>% summarize(n = n())
-CBD_2011_2018_n = sample_2011_2018_CBD %>% group_by(TYPE) %>% summarize(n = n())
-# head(kits_2003_2010_n)
-# head(kits_2011_2018_n)
-# head(CBD_2003_2010_n)
-# head(CBD_2011_2018_n)
-
+# Calculating the total ocurrence of crimes per each sample subset
+kits_2003_2010_n = sample_2003_2010_kits %>%
+  group_by(TYPE) %>% 
+  summarize(n = n())
+kits_2011_2018_n = sample_2011_2018_kits %>%
+  group_by(TYPE) %>%
+  summarize(n = n())
+CBD_2003_2010_n = sample_2003_2010_CBD %>%
+  group_by(TYPE) %>% 
+  summarize(n = n())
+CBD_2011_2018_n = sample_2011_2018_CBD %>%
+  group_by(TYPE) %>% 
+  summarize(n = n())
 
 #The proportion of total crimes in Kitsilano from 2003-2010 that were Bicycle theft
 total_crimes_kits_2003 = sum(kits_2003_2010_n$n)
-bike_theft_kits_2003 = kits_2003_2010_n %>% filter(TYPE == 'Theft of Bicycle')
+bike_theft_kits_2003 = kits_2003_2010_n %>% 
+  filter(TYPE == 'Theft of Bicycle')
 kits_2003_2010_prop = bike_theft_kits_2003$n/total_crimes_kits_2003
-print("Proportion of Crime in Kitsilano That was Bike Theft from 2003-2010:")
-kits_2003_2010_prop
-
 
 #Proportion for kits 2011 to 2018
 total_crimes_kits_2011 = sum(kits_2011_2018_n$n)
-bike_theft_kits_2011 = kits_2011_2018_n %>% filter(TYPE == 'Theft of Bicycle')
+bike_theft_kits_2011 = kits_2011_2018_n %>%
+  filter(TYPE == 'Theft of Bicycle')
 kits_2010_2018_prop = bike_theft_kits_2011$n/total_crimes_kits_2011
-print("Proportion of Crime in Kitsilano That was Bike Theft from 2011-2018:")
-kits_2010_2018_prop
 
-
-#Proportions for CBD 2003 to 2010
+#Proportion for CBD 2003 to 2010
 total_crimes_CBD_2003 = sum(CBD_2003_2010_n$n)
-bikes_theft_CBD_2003 = CBD_2003_2010_n %>% filter(TYPE == 'Theft of Bicycle')
+bikes_theft_CBD_2003 = CBD_2003_2010_n %>%
+  filter(TYPE == 'Theft of Bicycle')
 CBD_prop_2003 = bikes_theft_CBD_2003$n/total_crimes_CBD_2003
-print("Proportion of Crime in the Central Business District that was Bike Theft from 2003-2010:")
-CBD_prop_2003
 
-
-#proportions for CBD 2011 to 2018
+#Proportion for CBD 2011 to 2018
 total_crimes_CBD_2011 = sum(CBD_2003_2010_n$n)
-bikes_theft_CBD_2011 = CBD_2011_2018_n %>% filter(TYPE == 'Theft of Bicycle')
+bikes_theft_CBD_2011 = CBD_2011_2018_n %>%
+  filter(TYPE == 'Theft of Bicycle')
 CBD_prop_2011 = bikes_theft_CBD_2011$n/total_crimes_CBD_2011
-print("Proportion of Crime in the Central Business District that was Bike Theft from 2011-2018:")
-CBD_prop_2011
 
+# Outputting results
+cat("Proportion of crimes in Kitsilano that were Bike Theft from 2003-2010:",kits_2003_2010_prop,"\nProportion of crimes in Kitsilano that were Bike Theft from 2011-2018:", kits_2010_2018_prop,"\nProportion of crimes in the Central Business District that were Bike Theft from 2003-2010:",CBD_prop_2003,"\nProportion of crimes in the Central Business District that were Bike Theft from 2011-2018:",CBD_prop_2011)
 ```
 
-**Methods**
-In what ways is this report trustworthy?
+## Methods
+### In what ways is this report trustworthy?
 
-Continue by explaining why the plot(s) and estimates that you produced are not enough to give to a stakeholder, and what you should provide in addition to address this gap. Make sure your plans include at least one hypothesis test and one confidence interval, with at least one of these being calculated using both bootstrapping and asymptotics for comparison.
-**The initial estimates here are not trustworthy because they are based only on point estimates from our sample. It is possible that while our point estimates are different they are not different enough to believe that the actual population parameters are truly different. We would still need to perform hypothesis testing to determine our confidence level that the true proportions are different (I'm not sure if this makes sense/is true)-Nic**
+*Continue by explaining why the plot(s) and estimates that you produced are not enough to give to a stakeholder, and what you should provide in addition to address this gap. Make sure your plans include at least one hypothesis test and one confidence interval, with at least one of these being calculated using both bootstrapping and asymptotics for comparison.*
 
-What do you expect to find? 
+The initial estimates here are not trustworthy because they are based only on point estimates from our sample. It is possible that while our point estimates are different they are not different enough to believe that the actual population parameters are truly different. We would still need to perform hypothesis testing to determine our confidence level that the true proportions are different.
 
-We expect to find that certain crimes such as assault may have increased over time while others may have decreased. We also expect the total number of crimes to increase over the years. ← mention neighbourhood predictions
+### What do you expect to find?
+
+We expect to find that certain crimes such as assault may have increased over time while others may have decreased. We also expect the total number of crimes to increase over the years. ← mention neighbourhood predictions 
 
 **for the bike crime question I would expect bike crimes as a proportion of total crime to be different across different neighbourhoods -Nic**
 
-What impact could such findings have?
+### What impact could such findings have?
 
-The results of this project could help inform the police on how to allocate their resources the most effectively (i.e., have higher staff in X neighbourhood). Our results may indicate which crimes are becoming more frequent in specified neighbourhoods, information that the Vancouver Police Department could use to strategically schedule staff based on their abilities and experiences. 
+The results of this project could help inform the police on how to allocate their resources the most effectively (i.e., have higher staff in X neighbourhood). Our results may indicate which crimes are becoming more frequent in specified neighbourhoods, information that the Vancouver Police Department could use to strategically schedule staff based on their abilities and experiences.
 
 **Impact for the bike crime as a proportion of crime could something similar to this - it could inform police resource allocation and city budget allocation. For example installing more cameras and bike racks in certain locations or installing bike cage rentals in certain locations -Nic**
 
-What future questions could this lead to? 
+### What future questions could this lead to?
 
-A future question this project could inform is “Why has the occurrence of crime x increased/decreased over time?” 
+A future question this project could inform is "Why has the occurrence of crime x increased/decreased over time?"
 
 **Similarily it could inform the question of why is bike crime greater/lesser/same in this area versus other areas? -Nic**
 
+## References
 
-**References**
+(1) The Canadian Press. (2020, September 17). Vancouver police record increase in violent crime, decrease in property crime in the first half of 2020. CBCnews. <https://www.cbc.ca/news/canada/british-columbia/vancouver-police-increase-violent-crime-decrease-property-crime-1.5728664>.
 
-(1)The Canadian Press. (2020, September 17). Vancouver police record increase in violent crime, decrease in property crime in the first half of 2020. CBCnews. https://www.cbc.ca/news/canada/british-columbia/vancouver-police-increase-violent-crime-decrease-property-crime-1.5728664.
-
-(2)Uguen-Csenge, E. (2021, June 27). Here's what happened to crime rates in Vancouver during the pandemic | CBC News. CBCnews. https://www.cbc.ca/news/canada/british-columbia/here-s-what-happened-to-crime-rates-in-vancouver-during-the-pandemic-1.6078015.
-
-```{r}
-
-```
+(2) Uguen-Csenge, E. (2021, June 27). Here's what happened to crime rates in Vancouver during the pandemic \| CBC News. CBCnews. <https://www.cbc.ca/news/canada/british-columbia/here-s-what-happened-to-crime-rates-in-vancouver-during-the-pandemic-1.6078015>.
